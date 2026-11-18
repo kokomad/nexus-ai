@@ -39,7 +39,7 @@ app.innerHTML = `
         <input id="prompt" placeholder="اكتب رسالتك هنا..." autocomplete="off">
         <button type="submit">➤</button>
       </form>
-      <small class="demo-note">واجهة تجريبية — يتطلب الرد الذكي ربط خدمة AI</small>
+      <small class="demo-note">مدعوم بـ Cloudflare Workers AI</small>
     </section>
 
     <section class="tools">
@@ -85,18 +85,29 @@ app.innerHTML = `
 const messages = document.querySelector('#messages')
 const prompt = document.querySelector('#prompt')
 
-function sendMessage(value) {
+async function sendMessage(value) {
   const text = value.trim()
   if (!text) return
 
-  messages.insertAdjacentHTML('beforeend',
-    `<div class="user-message"></div>`)
+  messages.insertAdjacentHTML('beforeend', '<div class="user-message"></div>')
   messages.lastElementChild.textContent = text
-
-  messages.insertAdjacentHTML('beforeend',
-    `<div class="ai-message">تم استلام رسالتك. لتمكين الإجابات الذكية الفعلية، سنربط NEXUS AI بمحرك ذكاء اصطناعي في المرحلة التالية.</div>`)
-
   prompt.value = ''
+
+  messages.insertAdjacentHTML('beforeend', '<div class="ai-message">...</div>')
+  const bubble = messages.lastElementChild
+  messages.scrollTop = messages.scrollHeight
+
+  try {
+    const res = await fetch('https://sparkling-boat-a874.mankhader.workers.dev/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    })
+    const data = await res.json()
+    bubble.textContent = data.reply || data.error || 'تعذر الحصول على رد'
+  } catch {
+    bubble.textContent = 'خطأ في الاتصال'
+  }
   messages.scrollTop = messages.scrollHeight
 }
 
